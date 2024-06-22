@@ -1,0 +1,2 @@
+This project is creating a basic api to try out django and give a usable API to test other projects I have.
+Not particularly useful to anyone but I'll put it on GitHub still since I've been told that posting all my code publicly is 'super cool' so when I work on anything I'll migrate it from my self hosted GitLab to this GitHub.
