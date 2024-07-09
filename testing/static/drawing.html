@@ -1,0 +1,121 @@
+
+
+<html>
+<body>
+    <div style="border:solid 10px;display:inline-block">
+    <canvas id="drawing" width="500" height="500"></canvas>
+    </div>
+    <script>
+
+class Drawing {
+    static Change = class Change {
+        constructure(lastAccess, user, color) {
+            this.lastAccess = lastAccess;
+            this.user = user;
+            this.color = color;
+        }
+
+        isLater(other) {
+            if (this.lastAccess < other.lastAccess)
+                return true;
+            if (this.lastAccess == other.lastAccess && this.user > other.user)
+                return true;
+            return false;
+        }
+    }
+
+    static squareSize = 10;
+
+    constructor(canvas, websocket) {
+        this.canvas = canvas;
+        this.websocket = websocket;
+
+        this.context = canvas.getContext('2d');;
+        this.user = crypto.randomUUID();
+        this.color = this.randomColor();
+        this.width = Math.ceil(canvas.witdth / squareSize);
+        this.height = Math.ceil(canvas.height / squareSize);
+
+        // the image consists of the most recent change for each pixel (with ties broken by user id)
+        this.image = new Array(this.width).map(() => new Array(this.height).map(new Change(0, 0, new Color("white"))));
+
+        this.draw();
+    }
+
+    draw() {
+        this.image.forEach((column, x) => column.forEach((update, y) => drawPixel(x, y.color)));
+    }
+
+    drawPixel(x, y, color) {
+        this.context.fillStyle = color;
+        ctx.fillRect(x * squareSize, y * squareSize, squareSize, squareSize);
+    }
+
+    handleClick(xPixel, yPixel, timestamp) {
+        const change = new Change(timestamp, this.user, this.color);
+        x = Math.floor(xPixel / this.squareSize);
+        y = Math.floor(yPixel / this.squareSize);
+
+        if (!change.isLater(this.image[x][y])) {
+            return false;
+        }
+        drawPixel(x, y, this.color);
+
+        // send update over websocket
+
+        return true;
+    }
+
+    handleWebsocket(message) {
+        x = message.x;
+        y = message.y;
+        change = message.change;
+
+        if (!change.isLater(this.image[x][y])) {
+            return;
+        }
+        
+        this.image[x][y] = change;
+        drawPixel(x,y,change.color);
+    }
+
+    static randomColor() {
+        // get an integer up to, and including, max value)
+        getRandom = function(max) {
+            return Math.floor(Math.random() * (max + 1));
+        }
+
+        return new Color(getRandom(255), getRandom(255), getRandom(255))
+    }
+}
+
+
+// create canvas element and append it to document body
+var canvas = document.getElementById('drawing');
+const squareSize = 10;
+
+// get canvas 2D context and set him correct size
+var ctx = canvas.getContext('2d');
+
+
+// window.addEventListener('resize', resize);
+document.addEventListener('mousemove', draw, false);
+document.addEventListener('mousedown', draw, false);
+document.addEventListener('mouseenter', draw, false);
+
+    function draw(e) {
+        if (e.buttons !== 1) return;
+        const rect = canvas.getBoundingClientRect()
+        var x = e.clientX - canvas.offsetLeft;
+        var y = e.clientY - canvas.offsetTop;
+
+        ctx.fillStyle = '#c0392b';
+
+        var col = Math.floor(x / squareSize);
+        var row = Math.floor(y / squareSize);
+        ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
+    }
+    </script>
+</body>
+</html>
+
